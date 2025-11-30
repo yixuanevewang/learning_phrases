@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Fullscreen App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Interactive Phrases</title>
+    
+    <style>
+        /* --- Reset & Variables --- */
+        :root {
+            --col-1: #bfdbfe; /* Blue */
+            --col-2: #bbf7d0; /* Green */
+            --col-3: #fed7aa; /* Orange */
+            --col-4: #e9d5ff; /* Purple */
+            --col-5: #fbcfe8; /* Pink (New) */
+            --col-6: #a5f3fc; /* Cyan (New) */
+            --text-color: #1e293b;
+            --highlight-bg: #facc15; /* Yellow */
+            --highlight-text: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Padding to avoid edges */
+            padding: 2vmin;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* --- Main Layout --- */
+        .container {
+            display: flex;
+            flex-direction: column; /* Stacked vertically */
+            width: 100%;
+            height: 100%;
+            gap: 1.5vmin; /* Slightly tighter gap to fit 6 rows */
+        }
+
+        /* --- Phrase Boxes --- */
+        .phrase-box {
+            flex: 1; /* All boxes take equal height */
+            width: 100%; /* Full width */
+            border-radius: 16px; /* Slightly smaller radius for denser layout */
+            display: flex;
+            flex-direction: row; /* Content flows horizontally inside */
+            align-items: center;
+            justify-content: center; /* Center text */
+            text-align: center;
+            padding: 0 2vmin; /* Horizontal padding */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.2s;
+            overflow: hidden;
+        }
+
+        .phrase-box:active {
+            transform: scale(0.99);
+            filter: brightness(0.95);
+        }
+
+        /* Distinct Colors */
+        #box-1 { background-color: var(--col-1); }
+        #box-2 { background-color: var(--col-2); }
+        #box-3 { background-color: var(--col-3); }
+        #box-4 { background-color: var(--col-4); }
+        #box-5 { background-color: var(--col-5); }
+        #box-6 { background-color: var(--col-6); }
+
+        /* --- Text Styling --- */
+        /* Flex-wrap for words, keeping them centered */
+        .content-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5vmin; /* Space between words */
+            width: 100%;
+        }
+
+        .word-span {
+            /* Adjusted font size to fit 6 rows nicely without cramping */
+            font-size: 6vh; 
+            font-weight: 700;
+            color: var(--text-color);
+            padding: 0.2vh 0.8vh;
+            border-radius: 8px;
+            transition: background-color 0.1s;
+            line-height: 1.1; 
+        }
+
+        /* Special styling for the blank line */
+        .blank-line {
+            display: inline-block;
+            border-bottom: 0.6vh solid var(--text-color); 
+            width: 10vh;
+            margin: 0 0.5vh;
+        }
+
+        /* --- Highlight State --- */
+        .word-span.speaking {
+            background-color: var(--highlight-bg);
+            color: var(--highlight-text);
+            transform: scale(1.05); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .hint {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2vh;
+            color: #94a3b8;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Box 1 -->
+        <div class="phrase-box" id="box-1">
+            <div class="content-wrapper" id="content-1"></div>
+        </div>
+
+        <!-- Box 2 -->
+        <div class="phrase-box" id="box-2">
+            <div class="content-wrapper" id="content-2"></div>
+        </div>
+
+        <!-- Box 3 -->
+        <div class="phrase-box" id="box-3">
+            <div class="content-wrapper" id="content-3"></div>
+        </div>
+
+        <!-- Box 4 -->
+        <div class="phrase-box" id="box-4">
+            <div class="content-wrapper" id="content-4"></div>
+        </div>
+
+        <!-- Box 5 (New) -->
+        <div class="phrase-box" id="box-5">
+            <div class="content-wrapper" id="content-5"></div>
+        </div>
+
+        <!-- Box 6 (New) -->
+        <div class="phrase-box" id="box-6">
+            <div class="content-wrapper" id="content-6"></div>
+        </div>
+    </div>
+
+    <div class="hint">Tap a box to read</div>
+
+    <script>
+        // --- Logic ---
+        
+        // 1. Get Date String
+        const date = new Date();
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const dateStr = date.toLocaleDateString('en-US', dateOptions);
+        
+        // 2. Define Content
+        const phrases = [
+            { id: 'content-1', text: "My name is" },
+            { id: 'content-2', text: "I was born" },
+            { id: 'content-3', text: "I am ___ years old" },
+            { id: 'content-4', text: "It is " + dateStr },
+            { id: 'content-5', text: "CIRA" },
+            { id: 'content-6', text: "I am at" }
+        ];
+
+        // 3. Initialize UI (Split into Spans)
+        phrases.forEach(item => {
+            const container = document.getElementById(item.id);
+            const parentBox = container.parentElement;
+            
+            // Split by space
+            const words = item.text.split(' ');
+            
+            // Store span references for this box
+            const spanRefs = [];
+
+            words.forEach(word => {
+                const span = document.createElement('span');
+                span.className = 'word-span';
+                
+                // Handle the blank line specific visual
+                if (word === "___") {
+                    span.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"; // Spaces for width
+                    span.style.borderBottom = "0.6vh solid black"; // Match CSS
+                } else {
+                    span.textContent = word;
+                }
+                
+                container.appendChild(span);
+
+                // Determine spoken text for iOS/iPad
+                let spokenText = word;
+                if (word === "___") spokenText = "blank";
+                else if (word === "I") spokenText = "Eye"; // Forces "Eye" pronunciation
+                
+                spanRefs.push({
+                    text: spokenText,
+                    el: span
+                });
+            });
+
+            // Attach Click Event
+            parentBox.onclick = () => playSequence(spanRefs);
+        });
+
+        // 4. Speech Logic (Word-by-Word Karaoke)
+        let isSpeaking = false;
+
+        function playSequence(wordObjects) {
+            if (!window.speechSynthesis) return;
+
+            // Stop any previous speech
+            window.speechSynthesis.cancel();
+            document.querySelectorAll('.speaking').forEach(el => el.classList.remove('speaking'));
+
+            let index = 0;
+
+            function playNext() {
+                if (index >= wordObjects.length) return;
+
+                const obj = wordObjects[index];
+                
+                const utterance = new SpeechSynthesisUtterance(obj.text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.3; // Very Slow
+
+                // Highlight ON
+                utterance.onstart = () => {
+                    obj.el.classList.add('speaking');
+                };
+
+                // Highlight OFF & Next
+                const finish = () => {
+                    obj.el.classList.remove('speaking');
+                    index++;
+                    playNext();
+                };
+
+                utterance.onend = finish;
+                utterance.onerror = finish;
+
+                window.speechSynthesis.speak(utterance);
+            }
+
+            playNext();
+        }
+
+    </script>
+</body>
+</html>
